@@ -5,12 +5,20 @@ from django.views.decorators.csrf import csrf_exempt
 from api.models import Order, Payment
 from api.payments.factory import PaymentFactory
 
+from drf_spectacular.utils import extend_schema
+from api.serializers.payment import PaymentSerializer, PaymentInitiateSerializer, PaymentConfirmSerializer
+
 class InitiatePaymentView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(request=PaymentInitiateSerializer, responses={200: dict})
     def post(self, request):
-        order_id = request.data.get('order_id')
-        provider_name = request.data.get('provider')
+        serializer = PaymentInitiateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        order_id = serializer.validated_data['order_id']
+        provider_name = serializer.validated_data['provider']
         
         order = get_object_or_404(Order, id=order_id, user=request.user)
         
@@ -30,9 +38,14 @@ class InitiatePaymentView(views.APIView):
 class ConfirmPaymentView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(request=PaymentConfirmSerializer, responses={200: dict})
     def post(self, request):
-        payment_id = request.data.get('payment_id') # This is transaction_id / paymentID
-        provider_name = request.data.get('provider')
+        serializer = PaymentConfirmSerializer(data=request.data)
+        if not serializer.is_valid():
+             return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+             
+        payment_id = serializer.validated_data['payment_id']
+        provider_name = serializer.validated_data['provider']
         
         try:
             provider = PaymentFactory.get_provider(provider_name)
@@ -41,10 +54,13 @@ class ConfirmPaymentView(views.APIView):
         except Exception as e:
             return response.Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+from drf_spectacular.types import OpenApiTypes
+
 @method_decorator(csrf_exempt, name='dispatch')
 class StripeWebhookView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT}, description="Endpoint for Stripe to send webhook events (e.g. payment_intent.succeeded)")
     def post(self, request):
         try:
             provider = PaymentFactory.get_provider('stripe')

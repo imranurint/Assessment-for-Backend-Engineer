@@ -38,9 +38,11 @@ A comprehensive Django REST Framework API for e-commerce with multi-provider pay
     python manage.py runserver
     ```
 
-6. **Documentation**
-    - Architecture & Diagrams: See `docs/` folder.
-    - API Swagger: Visit `/api/docs/` after starting the server.
+## Documentation
+The detailed technical documentation can be found in the `docs/` directory:
+- [System Design & Architecture](docs/system_design.md)
+- [API cURL Commands Guide](docs/curl_commands.md)
+- [Interactive API UI (Swagger)](http://localhost:8000/api/docs/) (Requires server running)
 
 ## Redis Setup
 Ensure Redis is running for category tree caching.
